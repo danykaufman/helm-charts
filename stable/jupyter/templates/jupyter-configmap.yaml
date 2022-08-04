@@ -276,16 +276,39 @@ data:
 
     # pip persistency on fuse mount for /conda (docker) envs
     # jupyter:
-    echo 'export PYTHONUSERBASE=/User/.pythonlibs/{{ template "jupyter.fullname" . }}' > $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
-    echo 'export PATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/bin:$PATH' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
-    echo 'unset PYTHONUSERBASE' > $CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh
-    echo 'export PATH=$(echo $PATH | sed "s@/User/.pythonlibs/{{ template "jupyter.fullname" . }}/bin:@@")' >> $CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh
+    if [ ! -e "$CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh" ]; then
+      # clean leftovers from previous env
+      echo 'for env in {{ template "jupyter.fullname" . }} mlrun-base mlrun-extended; do' > $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      echo '  PATH=${PATH#/User/.pythonlibs/${env}/bin:}' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      echo 'done' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      # update paths    
+      echo 'export PIP_PREFIX=/User/.pythonlibs/{{ template "jupyter.fullname" . }}' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      echo 'export PYTHONPATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/lib/python3.8/site-packages/' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      echo 'export PATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/bin:$PATH' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+    fi
+    if [ ! -e "$CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh" ]; then
+      echo 'unset PIP_PREFIX' > $CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh
+      echo 'unset PYTHONPATH' >> $CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh
+      echo 'export PATH=$(echo $PATH | sed "s@/User/.pythonlibs/{{ template "jupyter.fullname" . }}/bin:/conda/envs/${CONDA_DEFAULT_ENV}/bin:@@")' >> $CONDA_HOME/envs/jupyter/etc/conda/deactivate.d/env_vars.sh
+    fi
     # mlrun-base/extended:
     for env in mlrun-base mlrun-extended; do
-      echo 'export PYTHONUSERBASE=/User/.pythonlibs/${CONDA_DEFAULT_ENV}' > $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
-      echo 'export PATH=/User/.pythonlibs/${CONDA_DEFAULT_ENV}/bin:$PATH' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
-      echo 'unset PYTHONUSERBASE' > $CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh
-      echo 'export PATH=$(echo $PATH | sed "s@/User/.pythonlibs/${CONDA_DEFAULT_ENV}/bin:@@")' >> $CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh
+      if [ ! -e "$CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh" ]; then
+        # clean leftovers from previous env
+        echo 'for env in {{ template "jupyter.fullname" . }} mlrun-base mlrun-extended; do' > $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+        echo '  PATH=${PATH#/User/.pythonlibs/${env}/bin:}' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+        echo 'done' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh 
+        # update paths 
+        echo 'export PIP_PREFIX=/User/.pythonlibs/${CONDA_DEFAULT_ENV}' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+        echo 'export PYTHONPATH=/User/.pythonlibs/${CONDA_DEFAULT_ENV}/lib/python3.8/site-packages/' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+        echo 'export PATH=/User/.pythonlibs/${CONDA_DEFAULT_ENV}/bin:$PATH' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+      fi
+      if [ ! -e "$CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh" ]; then
+        echo 'unset PIP_PREFIX' > $CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh
+        echo 'unset PYTHONPATH' >> $CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh
+        echo 'export PATH=$(echo $PATH | sed "s@/User/.pythonlibs/${CONDA_DEFAULT_ENV}/bin:/conda/envs/${CONDA_DEFAULT_ENV}/bin:@@")' >> $CONDA_HOME/envs/${env}/etc/conda/deactivate.d/env_vars.sh
+        # consider export PATH=${PATH#/User/.pythonlibs/${CONDA_DEFAULT_ENV}/bin:} after investigating conda bug
+      fi
     done
 
     # Prevent git from failing on fuse mount (not owned by iguazio user)
@@ -307,8 +330,6 @@ data:
       echo 'function pip(){' >> ${HOME}/.bashrc
       echo '  if [ "${CONDA_DEFAULT_ENV-}" = "base" ] && [ "$1" = "install" ]; then' >> ${HOME}/.bashrc
       echo '    echo "Not allowed in conda base env"' >> ${HOME}/.bashrc
-      echo '  elif [[ ${CONDA_DEFAULT_ENV-} =~ jupyter|mlrun-base|mlrun-extended ]] && [ "$1" = "install" ]; then' >> ${HOME}/.bashrc
-      echo '    command pip "$@" --user' >> ${HOME}/.bashrc
       echo '  else' >> ${HOME}/.bashrc
       echo '    command pip "$@"' >> ${HOME}/.bashrc
       echo '  fi' >> ${HOME}/.bashrc
@@ -318,7 +339,7 @@ data:
       echo '  if [ "${CONDA_DEFAULT_ENV-}" = "base" ] && [ "$1" = "install" ]; then' >> ${HOME}/.bashrc
       echo '    echo "Not allowed in conda base env"' >> ${HOME}/.bashrc
       echo '  elif [[ ${CONDA_DEFAULT_ENV-} =~ jupyter|mlrun-base|mlrun-extended ]] && [ "$1" = "install" ]; then' >> ${HOME}/.bashrc
-      echo '    echo "WARNING: Conda installs to ${CONDA_DEFAULT_ENV} env are not persistent."' >> ${HOME}/.bashrc
+      echo '    echo "WARNING: Conda installs to ${CONDA_DEFAULT_ENV} env are not persistent !!!"' >> ${HOME}/.bashrc
       echo '    conda "$@"' >> ${HOME}/.bashrc      
       echo '  else' >> ${HOME}/.bashrc
       echo '    conda "$@"' >> ${HOME}/.bashrc
