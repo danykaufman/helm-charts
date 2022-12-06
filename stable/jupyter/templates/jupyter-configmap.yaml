@@ -297,7 +297,7 @@ data:
       echo '  done' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
       # update paths    
       echo '  export PIP_PREFIX=/User/.pythonlibs/{{ template "jupyter.fullname" . }}' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
-      echo '  export PYTHONPATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/lib/python3.8/site-packages' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
+      echo '  export PYTHONPATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/lib/python3.9/site-packages' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
       echo '  export PATH=/User/.pythonlibs/{{ template "jupyter.fullname" . }}/bin:$PATH' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
       echo 'fi' >> $CONDA_HOME/envs/jupyter/etc/conda/activate.d/env_vars.sh
     fi
@@ -319,7 +319,7 @@ data:
         echo '  done' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh 
         # update paths 
         echo '  export PIP_PREFIX=/User/.pythonlibs/'${env} >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
-        echo '  export PYTHONPATH=/User/.pythonlibs/'${env}'/lib/python3.8/site-packages' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
+        echo '  export PYTHONPATH=/User/.pythonlibs/'${env}'/lib/python3.9/site-packages' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
         echo '  export PATH=/User/.pythonlibs/'${env}'/bin:$PATH' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
         echo 'fi' >> $CONDA_HOME/envs/${env}/etc/conda/activate.d/env_vars.sh
       fi
