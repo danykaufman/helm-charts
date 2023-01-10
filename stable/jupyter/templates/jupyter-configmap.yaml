@@ -129,10 +129,8 @@ data:
         cp /conda/envs/jupyter/etc/jupyter/jupyter_config.json ${JUPYTER_CONFIG_DIR}
     fi
 
-    if [ ! -e "${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py" ]; then
-        touch ${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py
-        echo "c.NotebookApp.contents_manager_class = 'jupyfm.jupyfm.Jupyfm'" >> ${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py
-        echo "c.FileContentsManager.delete_to_trash = False" >> ${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py
+    if [ -e "${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py" ]; then
+        rm -f ${JUPYTER_CONFIG_DIR}/jupyter_notebook_config.py
     fi
 
     if [ ! -e "${JUPYTER_CONFIG_DIR}/custom/custom.css" ]; then
